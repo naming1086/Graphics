@@ -411,6 +411,8 @@ LightTransportData GetLightTransportData(SurfaceData surfaceData, BuiltinData bu
 // BSDF share between directional light, punctual light and area light (reference)
 //-----------------------------------------------------------------------------
 
+#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Hair/HairReference.hlsl"
+
 bool IsNonZeroBSDF(float3 V, float3 L, PreLightData preLightData, BSDFData bsdfData)
 {
     return true; // Due to either reflection or transmission being always active
@@ -474,6 +476,21 @@ CBSDF EvaluateBSDF(float3 V, float3 L, PreLightData preLightData, BSDFData bsdfD
         float scatterFresnel2 = saturate(PositivePow((1.0 - geomNdotV), 20.0));
 
         cbsdf.specT = scatterFresnel1 + bsdfData.rimTransmissionIntensity * scatterFresnel2;
+    }
+
+    if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_HAIR_MARSCHNER))
+    {
+        cbsdf = EvaluateMarschnerReference(V, L, bsdfData);
+
+    // #if _USE_LIGHT_FACING_NORMAL
+    //     // See "Analytic Tangent Irradiance Environment Maps for Anisotropic Surfaces".
+    //     cbsdf.diffR = rcp(PI * PI) * clampedNdotL;
+    //     // Transmission is built into the model, and it's not exactly clear how to split it.
+    //     cbsdf.diffT = 0;
+    // #else
+    //     // Double-sided Lambert.
+    //     cbsdf.diffR = Lambert() * clampedNdotL;
+    // #endif
     }
 
     return cbsdf;
