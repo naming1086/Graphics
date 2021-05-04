@@ -107,6 +107,10 @@ void BuildSurfaceData(FragInputs fragInputs, inout SurfaceDescription surfaceDes
     // We reflect this normal for transmitted GI.
     // For the highlight shift hack (along the tangent), we use the user-provided normal.
 
+    #ifdef MATERIALFEATUREFLAGS_HAIR_MARSCHNER
+    surfaceData.normalWS = ComputeViewFacingNormal(V, surfaceData.hairStrandDirectionWS);
+    #endif
+
     #if HAVE_DECALS
         if (_EnableDecals)
         {

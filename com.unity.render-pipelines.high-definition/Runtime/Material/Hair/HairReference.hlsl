@@ -350,7 +350,7 @@ CBSDF EvaluateMarschnerReference(float3 V, float3 L, BSDFData bsdfData)
     // Factored lobe representation. Sigma Sp(thetai, thetao, phi) = Mp(thetai, thetao) * Np(phi).
     for (uint p = 0; p < 3; p++)
     {
-        // TEMP: Lobe selection
+        // TEMP: Lobe (R, TT, TRT, TRRT) selection
         // if (p == 0) continue;
         // if (p == 1) continue;
         // if (p == 2) continue;
@@ -365,4 +365,38 @@ CBSDF EvaluateMarschnerReference(float3 V, float3 L, BSDFData bsdfData)
     cbsdf.specR = S;
 
     return cbsdf;
+}
+
+//-----------------------------------------------------------------------------
+// EvaluateBSDF_Env - Reference
+// ----------------------------------------------------------------------------
+
+float3 IntegrateMarschnerIBLRef(LightLoopContext lightLoopContext,
+                                float3 V, PreLightData preLightData, EnvLightData lightData, BSDFData bsdfData,
+                                uint sampleCount = 16)
+{
+    float3 acc = float3(0.0, 0.0, 0.0);
+
+    // Add some jittering on Hammersley2d
+    float2 randNum = InitRandom(V.xy * 0.5 + 0.5);
+
+    // Integrate over the sphere due to reflective and transmissive events in the BSDF.
+    for (uint i = 0; i < sampleCount; ++i)
+    {
+        float2 u    = Hammersley2d(i, sampleCount);
+        u = frac(u + randNum);
+
+        float3 L = SampleSphereUniform(u.x, u.y);
+
+        // Incident Light intensity
+        float4 val = SampleEnv(lightLoopContext, lightData.envIndex, L, 0, lightData.rangeCompressionFactorCompensation, 0.5);
+
+        // BRDF Data
+        CBSDF cbsdf = EvaluateMarschnerReference(V, L, bsdfData);
+
+        float weight = rcp(INV_FOUR_PI * sampleCount);
+        acc += val.rgb * cbsdf.specR * weight;
+    }
+
+    return acc;
 }

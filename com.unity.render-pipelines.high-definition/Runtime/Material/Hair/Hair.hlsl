@@ -15,6 +15,7 @@
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/PreIntegratedFGD/PreIntegratedFGD.hlsl"
 
 #define DEFAULT_HAIR_SPECULAR_VALUE 0.0465 // Hair is IOR 1.55
+// #define HAIR_DISPLAY_REFERENCE_IBL
 
 //-----------------------------------------------------------------------------
 // Helper functions/variable specific to this material
@@ -367,25 +368,6 @@ PreLightData GetPreLightData(float3 V, PositionInputs posInput, inout BSDFData b
 }
 
 //-----------------------------------------------------------------------------
-// bake lighting function
-//-----------------------------------------------------------------------------
-
-// This define allow to say that we implement a ModifyBakedDiffuseLighting function to be call in PostInitBuiltinData
-#define MODIFY_BAKED_DIFFUSE_LIGHTING
-
-void ModifyBakedDiffuseLighting(float3 V, PositionInputs posInput, PreLightData preLightData, BSDFData bsdfData, inout BuiltinData builtinData)
-{
-    // Add GI transmission contribution to bakeDiffuseLighting, we then drop backBakeDiffuseLighting (i.e it is not used anymore, this save VGPR)
-    {
-        // TODO: disabled until further notice (not clear how to handle occlusion).
-        //builtinData.bakeDiffuseLighting += builtinData.backBakeDiffuseLighting * bsdfData.transmittance;
-    }
-
-    // Premultiply (back) bake diffuse lighting information with diffuse pre-integration
-    builtinData.bakeDiffuseLighting *= preLightData.diffuseFGD * bsdfData.diffuseColor;
-}
-
-//-----------------------------------------------------------------------------
 // light transport functions
 //-----------------------------------------------------------------------------
 
@@ -481,19 +463,42 @@ CBSDF EvaluateBSDF(float3 V, float3 L, PreLightData preLightData, BSDFData bsdfD
     if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_HAIR_MARSCHNER))
     {
         cbsdf = EvaluateMarschnerReference(V, L, bsdfData);
-
-    // #if _USE_LIGHT_FACING_NORMAL
-    //     // See "Analytic Tangent Irradiance Environment Maps for Anisotropic Surfaces".
-    //     cbsdf.diffR = rcp(PI * PI) * clampedNdotL;
-    //     // Transmission is built into the model, and it's not exactly clear how to split it.
-    //     cbsdf.diffT = 0;
-    // #else
-    //     // Double-sided Lambert.
-    //     cbsdf.diffR = Lambert() * clampedNdotL;
-    // #endif
     }
 
     return cbsdf;
+}
+
+//-----------------------------------------------------------------------------
+// bake lighting function
+//-----------------------------------------------------------------------------
+
+// This define allow to say that we implement a ModifyBakedDiffuseLighting function to be call in PostInitBuiltinData
+#define MODIFY_BAKED_DIFFUSE_LIGHTING
+
+void ModifyBakedDiffuseLighting(float3 V, PositionInputs posInput, PreLightData preLightData, BSDFData bsdfData, inout BuiltinData builtinData)
+{
+    // Add GI transmission contribution to bakeDiffuseLighting, we then drop backBakeDiffuseLighting (i.e it is not used anymore, this save VGPR)
+    {
+        // TODO: disabled until further notice (not clear how to handle occlusion).
+        //builtinData.bakeDiffuseLighting += builtinData.backBakeDiffuseLighting * bsdfData.transmittance;
+    }
+
+#ifndef HAIR_DISPLAY_REFERENCE_IBL
+    if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_HAIR_MARSCHNER))
+    {
+        // [NOTE-MARSCHNER-IBL]
+        // For now we approximate Marschner IBL as proposed by Brian Karis in "Physically Based Hair Shading in Unreal":
+        // Repurpose the spherical harmonic sample of the environment lighting (sampled with the modified normal).
+        // This sample is treated as a directional light source and we evaluate the BSDF with it directly.
+        CBSDF cbsdf = EvaluateBSDF(V, bsdfData.normalWS, preLightData, bsdfData);
+        builtinData.bakeDiffuseLighting *= cbsdf.specR;
+    }
+    else
+#endif
+    {
+        // Premultiply (back) bake diffuse lighting information with diffuse pre-integration
+        builtinData.bakeDiffuseLighting *= preLightData.diffuseFGD * bsdfData.diffuseColor;
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -787,6 +792,8 @@ IndirectLighting EvaluateBSDF_ScreenspaceRefraction(LightLoopContext lightLoopCo
 // EvaluateBSDF_Env
 // ----------------------------------------------------------------------------
 
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Sampling/Sampling.hlsl"
+
 // _preIntegratedFGD and _CubemapLD are unique for each BRDF
 IndirectLighting EvaluateBSDF_Env(  LightLoopContext lightLoopContext,
                                     float3 V, PositionInputs posInput,
@@ -804,22 +811,38 @@ IndirectLighting EvaluateBSDF_Env(  LightLoopContext lightLoopContext,
     float3 positionWS = posInput.positionWS;
     float weight = 1.0;
 
-    float3 R = preLightData.iblR;
-
-    // Note: using influenceShapeType and projectionShapeType instead of (lightData|proxyData).shapeType allow to make compiler optimization in case the type is know (like for sky)
-    float intersectionDistance = EvaluateLight_EnvIntersection(positionWS, bsdfData.normalWS, lightData, influenceShapeType, R, weight);
-
-    float4 preLD = SampleEnvWithDistanceBaseRoughness(lightLoopContext, posInput, lightData, R, preLightData.iblPerceptualRoughness, intersectionDistance);
-    weight *= preLD.a; // Used by planar reflection to discard pixel
-
-    envLighting = preLightData.specularFGD * preLD.rgb;
-
+#ifdef HAIR_DISPLAY_REFERENCE_IBL
+    if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_HAIR_MARSCHNER))
+    {
+        envLighting = IntegrateMarschnerIBLRef(lightLoopContext, V, preLightData, lightData, bsdfData);
+    }
+    else
+    {
+        // No IBL reference for Kajiya-Kay.
+        envLighting = 0;
+    }
+#else
     if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_HAIR_KAJIYA_KAY))
     {
+        float3 R = preLightData.iblR;
+
+        // Note: using influenceShapeType and projectionShapeType instead of (lightData|proxyData).shapeType allow to make compiler optimization in case the type is know (like for sky)
+        float intersectionDistance = EvaluateLight_EnvIntersection(positionWS, bsdfData.normalWS, lightData, influenceShapeType, R, weight);
+
+        float4 preLD = SampleEnvWithDistanceBaseRoughness(lightLoopContext, posInput, lightData, R, preLightData.iblPerceptualRoughness, intersectionDistance);
+        weight *= preLD.a; // Used by planar reflection to discard pixel
+
+        envLighting = preLightData.specularFGD * preLD.rgb;
+
         // We tint the HDRI with the secondary lob specular as it is more representatative of indirect lighting on hair.
         envLighting *= bsdfData.secondarySpecularTint;
     }
-
+    else
+    {
+        // See: [NOTE-MARSCHNER-IBL]
+        envLighting = 0;
+    }
+#endif
     UpdateLightingHierarchyWeights(hierarchyWeight, weight);
     envLighting *= weight * lightData.multiplier;
     lighting.specularReflected = envLighting;
@@ -844,6 +867,7 @@ void PostEvaluateBSDF(  LightLoopContext lightLoopContext,
     // diffuse lighting has already multiply the albedo in ModifyBakedDiffuseLighting().
     lightLoopOutput.diffuseLighting = bsdfData.diffuseColor * lighting.direct.diffuse + builtinData.bakeDiffuseLighting + builtinData.emissiveColor;
     lightLoopOutput.specularLighting = lighting.direct.specular + lighting.indirect.specularReflected;
+
 
 #ifdef DEBUG_DISPLAY
     PostEvaluateBSDFDebugDisplay(aoFactor, builtinData, lighting, bsdfData.diffuseColor, lightLoopOutput);
