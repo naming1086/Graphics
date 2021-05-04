@@ -17,6 +17,7 @@ struct ReferenceInputs
 
     float eta;
     float etaP;
+    float fresnel0;
 
     float shifts[3];
     float variances[3];
@@ -25,12 +26,6 @@ struct ReferenceInputs
     float3 absorption;
     float3 absorptionP;
 };
-
-float FresnelHair(float u)
-{
-    // TODO: SurfaceData.IOR (Exposed for animal fur, instead of hardcoded 1.55 for human hair).
-    return F_Schlick(DEFAULT_HAIR_SPECULAR_VALUE, u);
-}
 
 float ModifiedIOR(float ior, float thetaD)
 {
@@ -108,18 +103,18 @@ float AzimuthalDirection(uint p, float etaPrime, float h)
     return omega;
 }
 
-float3 Attenuation(uint p, float h, float LdotV, float thetaD, float etaPrime, float3 absorption)
+float3 Attenuation(uint p, float h, float LdotV, float thetaD, float etaPrime, float fresnel0, float3 absorption)
 {
     float3 A;
 
     if (p == 0)
     {
         // Attenuation term for R is a special case.
-        A = FresnelHair(0.5 * acos(LdotV));
+        A = F_Schlick(fresnel0, 0.5 * acos(LdotV));
     }
     else
     {
-        float f = FresnelHair(acos(cos(thetaD) * cos(asin(h))));
+        float f = F_Schlick(fresnel0, acos(cos(thetaD) * cos(asin(h))));
         float gammaT = asin(h / etaPrime);
         float3 T = exp(-2 * absorption * (1 + cos(2 * gammaT)));
 
@@ -179,7 +174,7 @@ float3 AzimuthalScatteringNearField(uint p, ReferenceInputs inputs)
 {
     // Evaluation of near field azimuthal scattering is done with the true offset (h).
     // It leverages the monte carlo integration of the pathtracer to solve the full integral.
-    float3 A = Attenuation(p, inputs.h, inputs.LdotV, inputs.thetaD, inputs.etaP, inputs.absorptionP);
+    float3 A = Attenuation(p, inputs.h, inputs.LdotV, inputs.thetaD, inputs.etaP, inputs.fresnel0, inputs.absorptionP);
 
     float azimuth = AzimuthalDirection(p, inputs.etaP, inputs.h);
 
@@ -205,7 +200,7 @@ float3 AzimuthalScatteringFarField(uint p, ReferenceInputs inputs)
         // Remap h to -1..1
         float h = 2 * ((float)i / n) - 1;
 
-        float3 A = Attenuation(p, h, inputs.LdotV, inputs.thetaD, inputs.etaP, inputs.absorptionP);
+        float3 A = Attenuation(p, h, inputs.LdotV, inputs.thetaD, inputs.etaP, inputs.fresnel0, inputs.absorptionP);
 
         float omega = AzimuthalDirection(p, inputs.etaP, h);
 
@@ -322,13 +317,14 @@ CBSDF EvaluateMarschnerReference(float3 V, float3 L, BSDFData bsdfData)
         inputs.shifts[1] = -inputs.shifts[0] / 2.0;
         inputs.shifts[2] = 3 * -inputs.shifts[0] / 2.0;
 
-        inputs.eta    = bsdfData.ior;
+        inputs.eta  = bsdfData.ior;
+        inputs.fresnel0 = IorToFresnel0(inputs.eta);
 
         // The analysis of azimuthal scattering can be restricted to the normal plane by exploiting
         // the Bravais properties of a smooth cylinder fiber and using the modified index of refraction.
-        inputs.etaP   = ModifiedIOR(inputs.eta, inputs.thetaD);
+        inputs.etaP = ModifiedIOR(inputs.eta, inputs.thetaD);
 
-        inputs.LdotV  = dot(L, V);
+        inputs.LdotV = dot(L, V);
 
 #ifdef HAIR_REFERENCE_NEAR_FIELD
         // Evaluation of h in the normal plane, given by gammaI = asin(h), where gammaI is the incident angle.

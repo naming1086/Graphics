@@ -15,7 +15,7 @@
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/PreIntegratedFGD/PreIntegratedFGD.hlsl"
 
 #define DEFAULT_HAIR_SPECULAR_VALUE 0.0465 // Hair is IOR 1.55
-// #define HAIR_DISPLAY_REFERENCE_IBL
+// #define HAIR_DISPLAY_REFERENCE
 
 //-----------------------------------------------------------------------------
 // Helper functions/variable specific to this material
@@ -483,7 +483,7 @@ void ModifyBakedDiffuseLighting(float3 V, PositionInputs posInput, PreLightData 
         //builtinData.bakeDiffuseLighting += builtinData.backBakeDiffuseLighting * bsdfData.transmittance;
     }
 
-#ifndef HAIR_DISPLAY_REFERENCE_IBL
+#ifndef HAIR_DISPLAY_REFERENCE
     if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_HAIR_MARSCHNER))
     {
         // [NOTE-MARSCHNER-IBL]
@@ -811,7 +811,7 @@ IndirectLighting EvaluateBSDF_Env(  LightLoopContext lightLoopContext,
     float3 positionWS = posInput.positionWS;
     float weight = 1.0;
 
-#ifdef HAIR_DISPLAY_REFERENCE_IBL
+#ifdef HAIR_DISPLAY_REFERENCE
     if (HasFlag(bsdfData.materialFeatures, MATERIALFEATUREFLAGS_HAIR_MARSCHNER))
     {
         envLighting = IntegrateMarschnerIBLRef(lightLoopContext, V, preLightData, lightData, bsdfData);
