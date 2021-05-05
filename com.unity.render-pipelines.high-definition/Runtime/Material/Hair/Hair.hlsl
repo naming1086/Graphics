@@ -13,6 +13,7 @@
 
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/LTCAreaLight/LTCAreaLight.hlsl"
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/PreIntegratedFGD/PreIntegratedFGD.hlsl"
+#include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Hair/PreIntegratedAzimuthalScattering.hlsl"
 
 #define DEFAULT_HAIR_SPECULAR_VALUE 0.0465 // Hair is IOR 1.55
 
@@ -519,6 +520,7 @@ CBSDF EvaluateBSDF(float3 V, float3 L, PreLightData preLightData, BSDFData bsdfD
 
         // R Path
         // --------------------------------------------------------
+        #if 0
         M = D_LongitudinalScatteringGaussian(cosThetaI + cosThetaR - radians(bsdfData.cuticleAngle), bsdfData.roughnessT);
 
         // Distribution and attenuation for the this path as proposed by d'Eon et al, replaced with a trig identity for cos half phi.
@@ -526,9 +528,18 @@ CBSDF EvaluateBSDF(float3 V, float3 L, PreLightData preLightData, BSDFData bsdfD
         A = F_Schlick(bsdfData.fresnel0, sqrt(0.5 + 0.5 * LdotV));
 
         S += M * A * D;
+        #endif
 
         // TT Path
         // --------------------------------------------------------
+        #if 1
+        M = D_LongitudinalScatteringGaussian(cosThetaI + cosThetaR - radians(0.5 * -bsdfData.cuticleAngle), 0.5 * bsdfData.roughnessT);
+
+        D = GetPreIntegratedAzimuthalScattering(cosThetaI, 0);
+        A = 1;
+
+        S += M * A * D;
+        #endif
 
         // TRT Path
         // --------------------------------------------------------

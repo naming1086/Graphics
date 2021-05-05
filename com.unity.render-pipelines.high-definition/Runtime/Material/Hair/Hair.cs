@@ -152,23 +152,27 @@ namespace UnityEngine.Rendering.HighDefinition
         {
             PreIntegratedFGD.instance.Build(PreIntegratedFGD.FGDIndex.FGD_GGXAndDisneyDiffuse);
             LTCAreaLight.instance.Build();
+            PreIntegratedAzimuthalScattering.instance.Build();
         }
 
         public override void Cleanup()
         {
             PreIntegratedFGD.instance.Cleanup(PreIntegratedFGD.FGDIndex.FGD_GGXAndDisneyDiffuse);
             LTCAreaLight.instance.Cleanup();
+            PreIntegratedAzimuthalScattering.instance.Cleanup();
         }
 
         public override void RenderInit(CommandBuffer cmd)
         {
             PreIntegratedFGD.instance.RenderInit(PreIntegratedFGD.FGDIndex.FGD_GGXAndDisneyDiffuse, cmd);
+            PreIntegratedAzimuthalScattering.instance.RenderInit(cmd);
         }
 
         public override void Bind(CommandBuffer cmd)
         {
             PreIntegratedFGD.instance.Bind(cmd, PreIntegratedFGD.FGDIndex.FGD_GGXAndDisneyDiffuse);
             LTCAreaLight.instance.Bind(cmd);
+            PreIntegratedAzimuthalScattering.instance.Bind(cmd);
         }
     }
 }
