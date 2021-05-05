@@ -110,7 +110,7 @@ float3 Attenuation(uint p, float h, float LdotV, float thetaD, float etaPrime, f
     if (p == 0)
     {
         // Attenuation term for R is a special case.
-        A = F_Schlick(fresnel0, 0.5 * acos(LdotV));
+        A = F_Schlick(fresnel0, sqrt(0.5 + 0.5 * LdotV));
     }
     else
     {
@@ -280,6 +280,7 @@ CBSDF EvaluateMarschnerReference(float3 V, float3 L, BSDFData bsdfData)
     CBSDF cbsdf;
     ZERO_INITIALIZE(CBSDF, cbsdf);
 
+
     // Construct a local frame with respect to strand and outgoing direction
     float3 X = bsdfData.hairStrandDirectionWS;
     float3 Y = normalize(cross(X, V));
@@ -348,8 +349,8 @@ CBSDF EvaluateMarschnerReference(float3 V, float3 L, BSDFData bsdfData)
     {
         // TEMP: Lobe (R, TT, TRT, TRRT) selection
         // if (p == 0) continue;
-        // if (p == 1) continue;
-        // if (p == 2) continue;
+        if (p == 1) continue;
+        if (p == 2) continue;
 
         S += LongitudinalScattering(p, inputs) * AzimuthalScattering(p, inputs);
     }

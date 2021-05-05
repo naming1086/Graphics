@@ -642,6 +642,17 @@ real3 D_KajiyaKay(real3 T, real3 H, real specularExponent)
     return dirAttn * norm * PositivePow(sinTHSq, 0.5 * n);
 }
 
+// Ref: "Light Scattering from Human Hair Fibers"
+// Longitudinal scattering as modeled by a normal distribution.
+// To be used as an approximation to d'Eon et al's Energy Conserving Longitudinal Scattering Function.
+real3 D_LongitudinalScatteringGaussian(real theta, real beta)
+{
+    real v = theta / beta;
+
+    const real sqrtTwoPi = 2.50662827463100050241;
+    return rcp(beta * sqrtTwoPi) * exp(-0.5 * v * v);
+}
+
 #if SHADER_API_MOBILE || SHADER_API_GLES || SHADER_API_GLES3
 #pragma warning (enable : 3205) // conversion of larger type to smaller
 #endif
