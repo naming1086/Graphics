@@ -829,7 +829,6 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
             AddAlphaClipControlToPass(ref result, target);
 
             return result;
-            
         }
 
         public static PassDescriptor _2DScenePicking(UniversalTarget target)
