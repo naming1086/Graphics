@@ -136,6 +136,9 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
                 if (target.castShadows || target.allowMaterialOverride)
                     result.passes.Add(CorePasses.ShadowCaster(target));
 
+                result.passes.Add(CorePasses.SceneSelection(target));
+                result.passes.Add(CorePasses.ScenePicking(target));
+
                 return result;
             }
 
