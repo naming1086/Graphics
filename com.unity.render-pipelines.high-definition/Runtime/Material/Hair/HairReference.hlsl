@@ -280,16 +280,10 @@ CBSDF EvaluateMarschnerReference(float3 V, float3 L, BSDFData bsdfData)
     CBSDF cbsdf;
     ZERO_INITIALIZE(CBSDF, cbsdf);
 
-
-    // Construct a local frame with respect to strand and outgoing direction
-    float3 X = bsdfData.hairStrandDirectionWS;
-    float3 Y = normalize(cross(X, V));
-    float3 Z = normalize(cross(X, Y));
-
-    // Transform to the local frame
-    float3x3 frame = float3x3(Z, Y, X);
-    float3 I = mul(frame, L);
-    float3 R = mul(frame, V);
+    // Transform to the local frame for spherical coordinates
+    float3x3 frame = GetLocalFrame(bsdfData.hairStrandDirectionWS);
+    float3 I = TransformWorldToTangent(L, frame);
+    float3 R = TransformWorldToTangent(V, frame);
 
     ReferenceInputs inputs;
     ZERO_INITIALIZE(ReferenceInputs, inputs);
@@ -348,9 +342,9 @@ CBSDF EvaluateMarschnerReference(float3 V, float3 L, BSDFData bsdfData)
     for (uint p = 0; p < 3; p++)
     {
         // TEMP: Lobe (R, TT, TRT, TRRT) selection
-        if (p == 0) continue;
+        // if (p == 0) continue;
         // if (p == 1) continue;
-        if (p == 2) continue;
+        // if (p == 2) continue;
 
         S += LongitudinalScattering(p, inputs) * AzimuthalScattering(p, inputs);
     }

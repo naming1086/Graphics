@@ -17,7 +17,7 @@
 
 #define DEFAULT_HAIR_SPECULAR_VALUE 0.0465 // Hair is IOR 1.55
 
-// #define HAIR_DISPLAY_REFERENCE_BSDF
+#define HAIR_DISPLAY_REFERENCE_BSDF
 // #define HAIR_DISPLAY_REFERENCE_IBL
 
 //-----------------------------------------------------------------------------
