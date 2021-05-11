@@ -15,39 +15,40 @@ namespace UnityEngine.Experimental.Rendering
             Initial,
         }
 
-        public enum CellSize
-        {
-            [InspectorName("1")]
-            CellSize1 = 1,
-            [InspectorName("9")]
-            CellSize9 = 9,
-            [InspectorName("27")]
-            CellSize27 = 27,
-            [InspectorName("81")]
-            CellSize81 = 81,
-            [InspectorName("243")]
-            CellSize243 = 243,
-        }
+        [SerializeField]
+        Version version = CoreUtils.GetLastEnumValue<Version>();
 
-        // This field will be replaced by something else (probably a distance based setting in meter) when the artists decide
-        // what they want. So, we shouldn't rely on this information too much.
         /// <summary>
-        /// The size of a Cell.
+        /// How many levels contains the probes hierarchical structure.
         /// </summary>
-        public CellSize cellSizeInBricks = CellSize.CellSize81;
+        [Range(2, 4)]
+        public int simplificationLevels = 3;
 
         /// <summary>
-        /// The size of a Brick.
+        /// The size of a Cell in number of bricks.
+        /// </summary>
+        public int cellSizeInBricks => (int)Mathf.Pow(simplificationLevels, 3);
+
+        /// <summary>
+        /// The minimum distance between two probes in meters.
         /// </summary>
         [Min(0.1f)]
         public float minDistanceBetweenProbes = 1.0f;
 
-        [SerializeField]
-        Version version = CoreUtils.GetLastEnumValue<Version>();
+        /// <summary>
+        /// Maximum subdivision in the structure.
+        /// </summary>
+        public int maxSubdivision => simplificationLevels + 1; // we add one for the top subdiv level which is the same size as a cell
 
-        public int maxSubdivision => Mathf.CeilToInt(Mathf.Log((float)cellSize / brickSize, 3));
-        public float brickSize => Mathf.Max(0.01f, minDistanceBetweenProbes * 3.0f);
-        public int cellSize => Mathf.CeilToInt((float)cellSizeInBricks * brickSize);
+        /// <summary>
+        /// Minimum size of a brick in meters.
+        /// </summary>
+        public float minBrickSize => Mathf.Max(0.01f, minDistanceBetweenProbes * 3.0f);
+
+        /// <summary>
+        /// Size of the cell in meters.
+        /// </summary>
+        public float cellSizeInMeters => (float)cellSizeInBricks * minBrickSize;
 
         void OnEnable()
         {
@@ -65,7 +66,7 @@ namespace UnityEngine.Experimental.Rendering
         public bool IsEquivalent(ProbeReferenceVolumeProfile otherProfile)
         {
             return minDistanceBetweenProbes == otherProfile.minDistanceBetweenProbes &&
-                cellSize == otherProfile.cellSize &&
+                cellSizeInMeters == otherProfile.cellSizeInMeters &&
                 maxSubdivision == otherProfile.maxSubdivision;
         }
     }
@@ -77,13 +78,13 @@ namespace UnityEngine.Experimental.Rendering
     {
         SerializedProperty m_CellSize;
         SerializedProperty m_MinDistanceBetweenProbes;
-        SerializedProperty m_IndexDimensions;
+        SerializedProperty m_SimplificationLevels;
         ProbeReferenceVolumeProfile profile => target as ProbeReferenceVolumeProfile;
 
         sealed class Styles
         {
             // TODO: Better tooltip are needed here.
-            public readonly GUIContent cellSizeStyle = new GUIContent("Brick Count Per Cell", "Determine how much bricks there is in a streamable unit.");
+            public readonly GUIContent simplificationLevels = new GUIContent("Simplification levels", "Determine how much bricks there is in a streamable unit.");
             public readonly GUIContent minDistanceBetweenProbes = new GUIContent("Min Distance Between Probes", "The minimal distance between two probes in meters.");
             public readonly GUIContent indexDimensions = new GUIContent("Index Dimensions", "The dimensions of the index buffer.");
         }
@@ -94,6 +95,7 @@ namespace UnityEngine.Experimental.Rendering
         {
             m_CellSize = serializedObject.FindProperty(nameof(ProbeReferenceVolumeProfile.cellSizeInBricks));
             m_MinDistanceBetweenProbes = serializedObject.FindProperty(nameof(ProbeReferenceVolumeProfile.minDistanceBetweenProbes));
+            m_SimplificationLevels = serializedObject.FindProperty(nameof(ProbeReferenceVolumeProfile.simplificationLevels));
         }
 
         public override void OnInspectorGUI()
@@ -101,15 +103,15 @@ namespace UnityEngine.Experimental.Rendering
             EditorGUI.BeginChangeCheck();
             serializedObject.Update();
 
-            EditorGUILayout.PropertyField(m_CellSize, s_Styles.cellSizeStyle);
+            EditorGUILayout.PropertyField(m_SimplificationLevels, s_Styles.simplificationLevels);
             EditorGUILayout.PropertyField(m_MinDistanceBetweenProbes, s_Styles.minDistanceBetweenProbes);
-            EditorGUILayout.HelpBox("Maximum subvision of the volume: " + profile.maxSubdivision, MessageType.Info);
+            EditorGUILayout.HelpBox($"The distance between probes will fluctuate between : {profile.minDistanceBetweenProbes}m and {profile.cellSizeInMeters}m", MessageType.Info);
 
             if (EditorGUI.EndChangeCheck())
             {
                 serializedObject.ApplyModifiedProperties();
 
-                float minDistanceBetweenProbes = ((float)profile.cellSize / Mathf.Pow(3, ProbeBrickIndex.kMaxSubdivisionLevels)) / 3.0f;
+                float minDistanceBetweenProbes = ((float)profile.cellSizeInBricks / Mathf.Pow(3, ProbeBrickIndex.kMaxSubdivisionLevels)) / 3.0f;
                 if (profile.minDistanceBetweenProbes < minDistanceBetweenProbes)
                     profile.minDistanceBetweenProbes = minDistanceBetweenProbes;
             }

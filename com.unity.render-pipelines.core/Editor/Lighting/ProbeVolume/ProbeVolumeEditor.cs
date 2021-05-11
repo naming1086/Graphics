@@ -15,13 +15,18 @@ namespace UnityEditor.Experimental.Rendering
         SerializedProbeVolume m_SerializedProbeVolume;
         internal const EditMode.SceneViewEditMode k_EditShape = EditMode.SceneViewEditMode.ReflectionProbeBox;
 
-        static HierarchicalBox s_ShapeBox;
+        static HierarchicalBox _ShapeBox;
+        static HierarchicalBox s_ShapeBox
+        {
+            get
+            {
+                return _ShapeBox ??= new HierarchicalBox(ProbeVolumeUI.Styles.k_GizmoColorBase, ProbeVolumeUI.Styles.k_BaseHandlesColor);
+            }
+        }
 
         protected void OnEnable()
         {
             m_SerializedProbeVolume = new SerializedProbeVolume(serializedObject);
-
-            s_ShapeBox = new HierarchicalBox(ProbeVolumeUI.Styles.k_GizmoColorBase, ProbeVolumeUI.Styles.k_BaseHandlesColor);
         }
 
         public override void OnInspectorGUI()
@@ -48,7 +53,7 @@ namespace UnityEditor.Experimental.Rendering
             {
                 // Bounding box.
                 s_ShapeBox.center = Vector3.zero;
-                s_ShapeBox.size = probeVolume.parameters.size;
+                s_ShapeBox.size = probeVolume.size;
                 s_ShapeBox.DrawHull(EditMode.editMode == k_EditShape);
             }
         }
@@ -63,7 +68,7 @@ namespace UnityEditor.Experimental.Rendering
             {
                 //contained must be initialized in all case
                 s_ShapeBox.center = Quaternion.Inverse(probeVolume.transform.rotation) * probeVolume.transform.position;
-                s_ShapeBox.size = probeVolume.parameters.size;
+                s_ShapeBox.size = probeVolume.size;
 
                 s_ShapeBox.monoHandle = false;
                 EditorGUI.BeginChangeCheck();
@@ -72,8 +77,7 @@ namespace UnityEditor.Experimental.Rendering
                 {
                     Undo.RecordObjects(new Object[] { probeVolume, probeVolume.transform }, "Change Probe Volume Bounding Box");
 
-                    probeVolume.parameters.size = s_ShapeBox.size;
-
+                    probeVolume.size = s_ShapeBox.size;
                     Vector3 delta = probeVolume.transform.rotation * s_ShapeBox.center - probeVolume.transform.position;
                     probeVolume.transform.position += delta;;
                 }

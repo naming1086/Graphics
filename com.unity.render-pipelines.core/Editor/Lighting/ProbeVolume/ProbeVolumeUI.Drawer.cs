@@ -137,7 +137,9 @@ namespace UnityEditor.Experimental.Rendering
             EditorGUI.EndProperty();
             EditorGUI.EndProperty();
 
-            EditorGUILayout.HelpBox($"The probe subdivision will fluctuate between {ProbeReferenceVolume.instance.GetMaxSubdivision(serialized.minSubdivisionMultiplier.floatValue)} and {ProbeReferenceVolume.instance.GetMaxSubdivision(serialized.maxSubdivisionMultiplier.floatValue)}", MessageType.Info);
+            int minSubdivInVolume = ProbeReferenceVolume.instance.GetMaxSubdivision(1 - serialized.minSubdivisionMultiplier.floatValue);
+            int maxSubdivInVolume = ProbeReferenceVolume.instance.GetMaxSubdivision(1 - serialized.maxSubdivisionMultiplier.floatValue);
+            EditorGUILayout.HelpBox($"The distance between probes will fluctuate between : {ProbeReferenceVolume.instance.GetDistanceBetweenProbes(maxSubdivInVolume)}m and {ProbeReferenceVolume.instance.GetDistanceBetweenProbes(minSubdivInVolume)}m", MessageType.Info);
             if (EditorGUI.EndChangeCheck())
             {
                 Vector3 tmpClamp = serialized.size.vector3Value;
@@ -146,6 +148,10 @@ namespace UnityEditor.Experimental.Rendering
                 tmpClamp.z = Mathf.Max(0f, tmpClamp.z);
                 serialized.size.vector3Value = tmpClamp;
             }
+
+            EditorGUILayout.PropertyField(serialized.objectLayerMask, Styles.s_ObjectLayerMask);
+
+            EditorGUILayout.PropertyField(serialized.geometryDistanceOffset, Styles.s_GeometryDistanceOffset);
         }
     }
 }
