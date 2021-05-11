@@ -280,7 +280,8 @@ namespace UnityEngine.Rendering
             Rendering.CommandBuffer cmd,
             Rendering.RenderTargetIdentifier colorBuffer,
             System.Func<Light, Camera, Vector3, float> GetLensFlareLightAttenuation,
-            int _FlareTex, int _FlareColorValue, int _FlareData0, int _FlareData1, int _FlareData2, int _FlareData3, int _FlareData4, int _FlareData5, bool debugView)
+            int _FlareTex, int _FlareColorValue, int _FlareData0, int _FlareData1, int _FlareData2, int _FlareData3, int _FlareData4, int _FlareData5,
+            bool debugView)
         {
             Vector2 vScreenRatio;
 
@@ -296,6 +297,19 @@ namespace UnityEngine.Rendering
             {
                 // Background pitch black to see only the Flares
                 cmd.ClearRenderTarget(false, true, Color.black);
+            }
+
+            if (cam.cameraType == CameraType.SceneView)
+            {
+                // Determine whether the "Animated Materials" checkbox is checked for the current view.
+                for (int i = 0; i < UnityEditor.SceneView.sceneViews.Count; i++) // Using a foreach on an ArrayList generates garbage ...
+                {
+                    var sv = UnityEditor.SceneView.sceneViews[i] as UnityEditor.SceneView;
+                    if (sv.camera == cam && !sv.sceneViewState.flaresEnabled)
+                    {
+                        return;
+                    }
+                }
             }
 
             foreach (LensFlareComponentSRP comp in lensFlares.GetData())
@@ -328,7 +342,9 @@ namespace UnityEngine.Rendering
                 {
                     positionWS = comp.transform.position;
                 }
+
                 viewportPos = cam.WorldToViewportPoint(positionWS);
+
                 if (usePanini && cam == Camera.main)
                 {
                     viewportPos = DoPaniniProjection(viewportPos, actualWidth, actualHeight, cam.fieldOfView, paniniCropToFit, paniniDistance);
