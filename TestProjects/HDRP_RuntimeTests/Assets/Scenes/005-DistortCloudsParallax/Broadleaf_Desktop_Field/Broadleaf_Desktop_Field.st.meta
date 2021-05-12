@@ -52,7 +52,7 @@ SpeedTreeImporter:
     enableBump: 1
     enableHue: 1
     enableSubsurface: 1
-    windQuality: 0
+    windQuality: 4
   - height: 0.25
     castShadows: 1
     receiveShadows: 1
