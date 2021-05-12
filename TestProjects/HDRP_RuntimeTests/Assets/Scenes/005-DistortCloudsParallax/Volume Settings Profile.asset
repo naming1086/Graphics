@@ -298,6 +298,7 @@ MonoBehaviour:
   - {fileID: 6273799319278995348}
   - {fileID: 482245397567179271}
   - {fileID: 3616190584349204827}
+  - {fileID: 6927097699416326037}
 --- !u!114 &482245397567179271
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -316,6 +317,7 @@ MonoBehaviour:
     m_Value:
     - {fileID: 11400000, guid: a0f4af736c5801f40ba3c590a8e23d95, type: 2}
     - {fileID: 11400000, guid: 92119388ece825647ba5039062efc187, type: 2}
+    - {fileID: 11400000, guid: 2384dbf2c1c420f45a792fbc315fbfb1, type: 2}
 --- !u!114 &3616190584349204827
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -497,3 +499,75 @@ MonoBehaviour:
     castShadows:
       m_OverrideState: 1
       m_Value: 0
+--- !u!114 &6927097699416326037
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 42ef2681fa3dc8c4fa031f044e68c63f, type: 3}
+  m_Name: GlobalIllumination
+  m_EditorClassIdentifier: 
+  active: 1
+  quality:
+    m_OverrideState: 1
+    m_Value: 3
+  enable:
+    m_OverrideState: 1
+    m_Value: 0
+  depthBufferThickness:
+    m_OverrideState: 1
+    m_Value: 0.1
+  m_RaySteps:
+    m_OverrideState: 1
+    m_Value: 256
+  m_FilterRadius:
+    m_OverrideState: 1
+    m_Value: 12
+  rayTracing:
+    m_OverrideState: 1
+    m_Value: 0
+  layerMask:
+    m_OverrideState: 1
+    m_Value:
+      serializedVersion: 2
+      m_Bits: 4294967295
+  textureLodBias:
+    m_OverrideState: 1
+    m_Value: 7
+  mode:
+    m_OverrideState: 1
+    m_Value: 2
+  sampleCount:
+    m_OverrideState: 1
+    m_Value: 2
+  bounceCount:
+    m_OverrideState: 1
+    m_Value: 1
+  m_RayLength:
+    m_OverrideState: 1
+    m_Value: 50
+  m_ClampValue:
+    m_OverrideState: 1
+    m_Value: 1.5
+  m_FullResolution:
+    m_OverrideState: 1
+    m_Value: 1
+  m_UpscaleRadius:
+    m_OverrideState: 1
+    m_Value: 4
+  m_Denoise:
+    m_OverrideState: 1
+    m_Value: 1
+  m_HalfResolutionDenoiser:
+    m_OverrideState: 1
+    m_Value: 0
+  m_DenoiserRadius:
+    m_OverrideState: 1
+    m_Value: 0.25
+  m_SecondDenoiserPass:
+    m_OverrideState: 1
+    m_Value: 1
