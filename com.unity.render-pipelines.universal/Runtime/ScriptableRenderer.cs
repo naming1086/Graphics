@@ -25,7 +25,7 @@ namespace UnityEngine.Rendering.Universal
     {
         private static partial class Profiling
         {
-            private const string k_Name = nameof(ScriptableRenderer);
+            private const string k_Name = nameof(ScriptableRenderer); //这个是k_Name 应该是获取名字
             public static readonly ProfilingSampler setPerCameraShaderVariables = new ProfilingSampler($"{k_Name}.{nameof(SetPerCameraShaderVariables)}");
             public static readonly ProfilingSampler sortRenderPasses = new ProfilingSampler($"Sort Render Passes");
             public static readonly ProfilingSampler setupLights = new ProfilingSampler($"{k_Name}.{nameof(SetupLights)}");
@@ -390,7 +390,7 @@ namespace UnityEngine.Rendering.Universal
         /// Returns a list of renderer features added to this renderer.
         /// <seealso cref="ScriptableRendererFeature"/>
         /// </summary>
-        protected List<ScriptableRendererFeature> rendererFeatures
+        protected List<ScriptableRendererFeature> rendererFeatures //会加载renderpass里面
         {
             get => m_RendererFeatures;
         }
@@ -838,7 +838,7 @@ namespace UnityEngine.Rendering.Universal
         /// <seealso cref="ScriptableRendererFeature.OnCameraPreCull(ScriptableRenderer, in CameraData)"/>
         /// </summary>
         /// <param name="cameraData">Current render state information.</param>
-        internal void OnPreCullRenderPasses(in CameraData cameraData)
+        internal void OnPreCullRenderPasses(in CameraData cameraData) //都会执行 OnCameraPreCull
         {
             // Add render passes from custom renderer features
             for (int i = 0; i < rendererFeatures.Count; ++i)
@@ -856,7 +856,7 @@ namespace UnityEngine.Rendering.Universal
         /// <seealso cref="ScriptableRendererFeature.AddRenderPasses(ScriptableRenderer, ref RenderingData)"/>
         /// </summary>
         /// <param name="renderingData"></param>
-        protected void AddRenderPasses(ref RenderingData renderingData)
+        protected void AddRenderPasses(ref RenderingData renderingData) //和rendererFeatures一起加AddRenderPasses
         {
             using var profScope = new ProfilingScope(null, Profiling.addRenderPasses);
 

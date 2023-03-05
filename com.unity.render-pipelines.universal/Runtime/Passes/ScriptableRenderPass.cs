@@ -28,7 +28,7 @@ namespace UnityEngine.Rendering.Universal
     /// <summary>
     /// Controls when the render pass executes.
     /// </summary>
-    public enum RenderPassEvent
+    public enum RenderPassEvent //RenderPassEvent顺序
     {
         /// <summary>
         /// Executes a <c>ScriptableRenderPass</c> before rendering any other passes in the pipeline.

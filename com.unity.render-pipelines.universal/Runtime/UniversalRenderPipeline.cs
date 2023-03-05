@@ -411,11 +411,14 @@ namespace UnityEngine.Rendering.Universal
 
                 using (new ProfilingScope(null, Profiling.Pipeline.Renderer.setup))
                 {
-                    renderer.Setup(context, ref renderingData); //调用渲染器的Setup(...)，主要是根据当前渲染数据，去设置本帧渲染需要用到的渲染过程到队列中，这些渲染过程在这里被命名为Pass，其基类类型为ScriptableRenderPass，可以继承扩展。后面会针对前向渲染器（ForwardRenderer）作详细描述。
+                    //调用渲染器的Setup(...)，主要是根据当前渲染数据，去设置本帧渲染需要用到的渲染过程到队列中，
+                    //这些渲染过程在这里被命名为Pass，其基类类型为ScriptableRenderPass，可以继承扩展。后面会针对前向渲染器（ForwardRenderer）作详细描述。
+                    //这个是抽象srp的抽象函数 urp应该是overwirte过
+                    renderer.Setup(context, ref renderingData); 
                 }
 
                 // Timing scope inside
-                renderer.Execute(context, ref renderingData); //执行已经在队列中的渲染过程
+                renderer.Execute(context, ref renderingData); //这个是在SRP中执行的
                 CleanupLightData(ref renderingData.lightData);
             } // When ProfilingSample goes out of scope, an "EndSample" command is enqueued into CommandBuffer cmd
 

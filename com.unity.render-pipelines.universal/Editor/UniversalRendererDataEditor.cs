@@ -4,6 +4,7 @@ using UnityEngine.Rendering.Universal;
 
 namespace UnityEditor.Rendering.Universal
 {
+    //class的editor的部分
     [CustomEditor(typeof(UniversalRendererData), true)]
     public class UniversalRendererDataEditor : ScriptableRendererDataEditor
     {

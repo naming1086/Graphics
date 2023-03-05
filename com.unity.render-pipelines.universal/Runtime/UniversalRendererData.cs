@@ -22,6 +22,7 @@ namespace UnityEngine.Rendering.Universal
             }
         }
 
+        //创建renderdata 不过好像在creat的时候顺便创建好了
         [MenuItem("Assets/Create/Rendering/URP Universal Renderer", priority = CoreUtils.Sections.section3 + CoreUtils.Priorities.assetsCreateRenderingMenuPriority + 2)]
         static void CreateUniversalRendererData()
         {
