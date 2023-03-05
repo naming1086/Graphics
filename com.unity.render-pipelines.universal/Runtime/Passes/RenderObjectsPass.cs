@@ -50,11 +50,12 @@ namespace UnityEngine.Experimental.Rendering.Universal
             this.renderQueueType = renderQueueType;
             this.overrideMaterial = null;
             this.overrideMaterialPassIndex = 0;
-            RenderQueueRange renderQueueRange = (renderQueueType == RenderQueueType.Transparent)
+            RenderQueueRange renderQueueRange = (renderQueueType == RenderQueueType.Transparent)// 新建过滤设置。只过滤出不透明对象
                 ? RenderQueueRange.transparent
                 : RenderQueueRange.opaque;
             m_FilteringSettings = new FilteringSettings(renderQueueRange, layerMask);
 
+            // 使用哪个Pass进行渲染
             if (shaderTags != null && shaderTags.Length > 0)
             {
                 foreach (var passName in shaderTags)
@@ -79,6 +80,7 @@ namespace UnityEngine.Experimental.Rendering.Universal
 
         public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
         {
+            // 设置渲染的排序方式
             SortingCriteria sortingCriteria = (renderQueueType == RenderQueueType.Transparent)
                 ? SortingCriteria.CommonTransparent
                 : renderingData.cameraData.defaultOpaqueSortFlags;
@@ -134,7 +136,7 @@ namespace UnityEngine.Experimental.Rendering.Universal
                     context.ExecuteCommandBuffer(cmd);
                     cmd.Clear();
 
-                    // Render the objects...
+                    // Render the objects...// 调用绘制指令。使用指定的渲染设置和过滤设置
                     context.DrawRenderers(renderingData.cullResults, ref drawingSettings, ref m_FilteringSettings, ref m_RenderStateBlock);
                 }
 

@@ -612,6 +612,7 @@ namespace UnityEngine.Rendering.Universal
         {
         }
 
+        //Execute(...)从ScriptableRenderPass的列表中将Pass按照渲染时序分类（即RenderPassEvent）取出来，并执行这个过程
         /// <summary>
         /// Execute the enqueued render passes. This automatically handles editor and stereo rendering.
         /// </summary>
@@ -656,7 +657,7 @@ namespace UnityEngine.Rendering.Universal
                 using (new ProfilingScope(null, Profiling.sortRenderPasses))
                 {
                     // Sort the render pass queue
-                    SortStable(m_ActiveRenderPassQueue);
+                    SortStable(m_ActiveRenderPassQueue);//整理
                 }
 
                 SetupNativeRenderPassFrameData(cameraData, useRenderPassEnabled);
@@ -1375,7 +1376,7 @@ namespace UnityEngine.Rendering.Universal
             {
                 for (int i = 0; i < m_ActiveRenderPassQueue.Count; ++i)
                 {
-                    m_ActiveRenderPassQueue[i].OnCameraSetup(cmd, ref renderingData);
+                    m_ActiveRenderPassQueue[i].OnCameraSetup(cmd, ref renderingData); //执行?
                 }
             }
 

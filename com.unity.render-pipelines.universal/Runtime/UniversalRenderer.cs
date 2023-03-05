@@ -56,6 +56,7 @@ namespace UnityEngine.Rendering.Universal
 #if ADAPTIVE_PERFORMANCE_2_1_0_OR_NEWER
         internal bool needTransparencyPass { get { return !UniversalRenderPipeline.asset.useAdaptivePerformance || !AdaptivePerformance.AdaptivePerformanceRenderSettings.SkipTransparentObjects;; } }
 #endif
+        //大部分pass
         /// <summary>Property to control the depth priming behavior of the forward rendering path.</summary>
         public DepthPrimingMode depthPrimingMode { get { return m_DepthPrimingMode; } set { m_DepthPrimingMode = value; } }
         DepthOnlyPass m_DepthPrepass;
@@ -363,6 +364,7 @@ namespace UnityEngine.Rendering.Universal
             }
         }
 
+        //Setup(...)会根据渲染数据，将本帧要执行的Pass加入到ScriptableRenderPass的列表中；
         /// <inheritdoc />
         public override void Setup(ScriptableRenderContext context, ref RenderingData renderingData)
         {
@@ -383,7 +385,7 @@ namespace UnityEngine.Rendering.Universal
             {
                 ConfigureCameraTarget(BuiltinRenderTextureType.CameraTarget, BuiltinRenderTextureType.CameraTarget);
                 AddRenderPasses(ref renderingData);
-                EnqueuePass(m_RenderOpaqueForwardPass);
+                EnqueuePass(m_RenderOpaqueForwardPass);//添加进去
 
                 // TODO: Do we need to inject transparents and skybox when rendering depth only camera? They don't write to depth.
                 EnqueuePass(m_DrawSkyboxPass);
@@ -401,6 +403,8 @@ namespace UnityEngine.Rendering.Universal
                 m_DeferredLights.IsOverlay = cameraData.renderType == CameraRenderType.Overlay;
             }
 
+            //需要渲染到ColorTexture的条件包括：打开MSAA、打开RenderScale、打开HDR、打开Post-Processing、打开渲染到OpaqueTexture、添加了自定义ScriptableRendererFeature等。 需要渲染到DepthTexture的条件主要是打开渲染到DepthTexture。
+            //如果当前相机是主相机，判断是否需要渲染到DepthTexture，如果需要就设置当前深度缓冲为m_CameraDepthAttachment，否则就渲染到相机默认渲染目标；判断是否需要渲染到ColorTexture，如果需要就设置当前颜色缓冲为m_CameraColorAttachment，否则就渲染到相机默认渲染目标。
             // Assign the camera color target early in case it is needed during AddRenderPasses.
             bool isPreviewCamera = cameraData.isPreviewCamera;
             var createColorTexture = m_IntermediateTextureMode == IntermediateTextureMode.Always && !isPreviewCamera;
@@ -608,7 +612,7 @@ namespace UnityEngine.Rendering.Universal
             bool hasPassesAfterPostProcessing = activeRenderPassQueue.Find(x => x.renderPassEvent == RenderPassEvent.AfterRenderingPostProcessing) != null;
 
             if (mainLightShadows)
-                EnqueuePass(m_MainLightShadowCasterPass);
+                EnqueuePass(m_MainLightShadowCasterPass); //添加各种pass
 
             if (additionalLightShadows)
                 EnqueuePass(m_AdditionalLightsShadowCasterPass);
@@ -712,6 +716,7 @@ namespace UnityEngine.Rendering.Universal
                     EnqueuePass(m_DrawSkyboxPass);
             }
 
+            // // 如果创建了DepthTexture，我们需要复制它，否则我们可以将它渲染到renderbuffer。
             // If a depth texture was created we necessarily need to copy it, otherwise we could have render it to a renderbuffer.
             if (requiresDepthCopyPass)
             {
@@ -786,11 +791,12 @@ namespace UnityEngine.Rendering.Universal
             // When post-processing is enabled we can use the stack to resolve rendering to camera target (screen or RT).
             // However when there are render passes executing after post we avoid resolving to screen so rendering continues (before sRGBConvertion etc)
             bool resolvePostProcessingToCameraTarget = !hasCaptureActions && !hasPassesAfterPostProcessing && !applyFinalPostProcessing;
-
+            //如果当前相机是本帧最后一个渲染的相机，则将一些需要最后Blit的Pass加入到ScriptableRenderPass的队列中。
             if (lastCameraInTheStack)
             {
                 SetupFinalPassDebug(ref cameraData);
 
+                // Post-processing将得到最终的渲染目标，不需要final blit pass。
                 // Post-processing will resolve to final target. No need for final blit pass.
                 if (applyPostProcessing)
                 {
@@ -802,6 +808,7 @@ namespace UnityEngine.Rendering.Universal
 
                 var sourceForFinalPass = m_ActiveCameraColorAttachment;
 
+                // 执行FXAA或任何其他可能需要在AA之后运行的Post-Processing效果。
                 // Do FXAA or any other final post-processing effect that might need to run after AA.
                 if (applyFinalPostProcessing)
                 {
@@ -825,6 +832,7 @@ namespace UnityEngine.Rendering.Universal
                     // offscreen camera rendering to a texture, we don't need a blit pass to resolve to screen
                     m_ActiveCameraColorAttachment == RenderTargetHandle.GetCameraTarget(cameraData.xr);
 
+                // 我们需要FinalBlitPass来得到最终的屏幕。
                 // We need final blit to resolve to screen
                 if (!cameraTargetResolved)
                 {

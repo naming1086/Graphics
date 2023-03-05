@@ -308,6 +308,7 @@ namespace UnityEngine.Rendering.Universal
         public uint layerMask;
     }
 
+    //这里设置shaderpropertid 全局类
     internal static class ShaderPropertyId
     {
         public static readonly int glossyEnvironmentColor = Shader.PropertyToID("_GlossyEnvironmentColor");
@@ -373,6 +374,7 @@ namespace UnityEngine.Rendering.Universal
         public bool useFastSRGBLinearConversion;
     }
 
+    //这个是全局keyword
     public static class ShaderKeywordStrings
     {
         public static readonly string MainLightShadows = "_MAIN_LIGHT_SHADOWS";
@@ -535,7 +537,7 @@ namespace UnityEngine.Rendering.Universal
             return false;
         }
 
-        Comparison<Camera> cameraComparison = (camera1, camera2) => { return (int)camera1.depth - (int)camera2.depth; };
+        Comparison<Camera> cameraComparison = (camera1, camera2) => { return (int)camera1.depth - (int)camera2.depth; }; //排序方式
 #if UNITY_2021_1_OR_NEWER
         void SortCameras(List<Camera> cameras)
         {

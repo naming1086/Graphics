@@ -152,9 +152,11 @@ namespace UnityEngine.Rendering.Universal
         FSR
     }
 
+    //这里用的是partial 作为部分
     [ExcludeFromPreset]
     public partial class UniversalRenderPipelineAsset : RenderPipelineAsset, ISerializationCallbackReceiver
     {
+        //这些都是创建时候的属性
         Shader m_DefaultShader;
         ScriptableRenderer[] m_Renderers = new ScriptableRenderer[1];
 
@@ -268,6 +270,7 @@ namespace UnityEngine.Rendering.Universal
         public static readonly string packagePath = "Packages/com.unity.render-pipelines.universal";
         public static readonly string editorResourcesGUID = "a3d8d823eedde654bb4c11a1cfaf1abb";
 
+        //这个只是pipline asset 初始化 创建数据资源相关 
         public static UniversalRenderPipelineAsset Create(ScriptableRendererData rendererData = null)
         {
             // Create Universal RP Asset
@@ -286,6 +289,7 @@ namespace UnityEngine.Rendering.Universal
             return instance;
         }
 
+        //开始创建文件名 有文件名 和文件路径
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1812")]
         internal class CreateUniversalPipelineAsset : EndNameEditAction
         {
@@ -296,6 +300,8 @@ namespace UnityEngine.Rendering.Universal
             }
         }
 
+        //这个是菜单栏 及其实例化的东西 还有文件名
+        //[CreateAssetMenu(menuName = "SampleSRP/SampleRenderPipelineAsset")] 这个是另一种写法 但没试过
         [MenuItem("Assets/Create/Rendering/URP Asset (with Universal Renderer)", priority = CoreUtils.Sections.section2 + CoreUtils.Priorities.assetsCreateRenderingMenuPriority + 1)]
         static void CreateUniversalPipeline()
         {
@@ -374,8 +380,8 @@ namespace UnityEngine.Rendering.Universal
             return m_RendererDataList[0];
 #endif
         }
-
-        protected override RenderPipeline CreatePipeline()
+        //开始创建管线 放入管线时相关
+        protected override RenderPipeline CreatePipeline() 
         {
             if (m_RendererDataList == null)
                 m_RendererDataList = new ScriptableRendererData[1];
@@ -398,7 +404,7 @@ namespace UnityEngine.Rendering.Universal
             }
 
             CreateRenderers();
-            return new UniversalRenderPipeline(this);
+            return new UniversalRenderPipeline(this); //URP管线
         }
 
         void DestroyRenderers()
@@ -540,12 +546,12 @@ namespace UnityEngine.Rendering.Universal
             return m_Renderers[index];
         }
 
-        internal ScriptableRendererData scriptableRendererData
+        internal ScriptableRendererData scriptableRendererData //加载的时候才会走这个
         {
             get
             {
                 if (m_RendererDataList[m_DefaultRendererIndex] == null)
-                    CreatePipeline();
+                    CreatePipeline(); //通过这个获取到默认shader
 
                 return m_RendererDataList[m_DefaultRendererIndex];
             }
@@ -1046,7 +1052,7 @@ namespace UnityEngine.Rendering.Universal
             get { return GetMaterial(DefaultMaterialType.Decal); }
         }
 
-        public override Shader defaultShader
+        public override Shader defaultShader //基础shader 默认是lit
         {
             get
             {
@@ -1065,8 +1071,8 @@ namespace UnityEngine.Rendering.Universal
 
                 if (m_DefaultShader == null)
                 {
-                    string path = AssetDatabase.GUIDToAssetPath(ShaderUtils.GetShaderGUID(ShaderPathID.Lit));
-                    m_DefaultShader  = AssetDatabase.LoadAssetAtPath<Shader>(path);
+                    string path = AssetDatabase.GUIDToAssetPath(ShaderUtils.GetShaderGUID(ShaderPathID.Lit));//这里获取到默认为lit的材质
+                    m_DefaultShader  = AssetDatabase.LoadAssetAtPath<Shader>(path);//LoadAssetAtPath 加载asset shader
                 }
 #endif
 

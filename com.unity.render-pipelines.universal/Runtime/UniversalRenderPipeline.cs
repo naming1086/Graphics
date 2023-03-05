@@ -12,6 +12,7 @@ using UnityEngine.Profiling;
 
 namespace UnityEngine.Rendering.Universal
 {
+    //注意取名方式 一个是asset 
     public sealed partial class UniversalRenderPipeline : RenderPipeline
     {
         public const string k_ShaderTagName = "UniversalPipeline";
@@ -40,6 +41,7 @@ namespace UnityEngine.Rendering.Universal
 #endif
             }
 
+            //大部分时候都是用来声明状态的
             public static class Pipeline
             {
                 // TODO: Would be better to add Profiling name hooks into RenderPipeline.cs, requires changes outside of Universal.
@@ -141,6 +143,7 @@ namespace UnityEngine.Rendering.Universal
         private UniversalRenderPipelineGlobalSettings m_GlobalSettings;
         public override RenderPipelineGlobalSettings defaultSettings => m_GlobalSettings;
 
+        //UniversalRenderPipelineAsset过来的时候 只是设置一些参数
         public UniversalRenderPipeline(UniversalRenderPipelineAsset asset)
         {
 #if UNITY_EDITOR
@@ -211,7 +214,7 @@ namespace UnityEngine.Rendering.Universal
 #endif
 
 #if UNITY_2021_1_OR_NEWER
-        protected override void Render(ScriptableRenderContext renderContext, List<Camera> cameras)
+        protected override void Render(ScriptableRenderContext renderContext, List<Camera> cameras) //render 主函数
 #else
         protected override void Render(ScriptableRenderContext renderContext, Camera[] cameras)
 #endif
@@ -223,7 +226,7 @@ namespace UnityEngine.Rendering.Universal
 #if UNITY_2021_1_OR_NEWER
             using (new ProfilingScope(null, Profiling.Pipeline.beginContextRendering))
             {
-                BeginContextRendering(renderContext, cameras);
+                BeginContextRendering(renderContext, cameras); //表示该帧即将开始渲染。
             }
 #else
             using (new ProfilingScope(null, Profiling.Pipeline.beginFrameRendering))
@@ -232,9 +235,9 @@ namespace UnityEngine.Rendering.Universal
             }
 #endif
 
-            GraphicsSettings.lightsUseLinearIntensity = (QualitySettings.activeColorSpace == ColorSpace.Linear);
+            GraphicsSettings.lightsUseLinearIntensity = (QualitySettings.activeColorSpace == ColorSpace.Linear); //是否线性
             GraphicsSettings.lightsUseColorTemperature = true;
-            GraphicsSettings.useScriptableRenderPipelineBatching = asset.useSRPBatcher;
+            GraphicsSettings.useScriptableRenderPipelineBatching = asset.useSRPBatcher; //是否使用srp batcher
             GraphicsSettings.defaultRenderingLayerMask = k_DefaultRenderingLayerMask;
             SetupPerFrameShaderConstants();
 #if ENABLE_VR && ENABLE_XR_MODULE
@@ -252,7 +255,7 @@ namespace UnityEngine.Rendering.Universal
             }
 #endif
 
-            SortCameras(cameras);
+            SortCameras(cameras); //根据所有要渲染的相机的depth值进行排序，depth越小越先渲染。
 #if UNITY_2021_1_OR_NEWER
             for (int i = 0; i < cameras.Count; ++i)
 #else
@@ -260,11 +263,11 @@ namespace UnityEngine.Rendering.Universal
 #endif
             {
                 var camera = cameras[i];
-                if (IsGameCamera(camera))
+                if (IsGameCamera(camera)) //如果当前相机是主相机
                 {
                     RenderCameraStack(renderContext, camera);
                 }
-                else
+                else //如果当前相机不是游戏相机，比如SceneView相机、预览相机等  执行相机渲染常规步骤
                 {
                     using (new ProfilingScope(null, Profiling.Pipeline.beginCameraRendering))
                     {
@@ -274,13 +277,13 @@ namespace UnityEngine.Rendering.Universal
                     //It should be called before culling to prepare material. When there isn't any VisualEffect component, this method has no effect.
                     VFX.VFXManager.PrepareCamera(camera);
 #endif
-                    UpdateVolumeFramework(camera, null);
+                    UpdateVolumeFramework(camera, null); //更新当前相机是否在某一个后期效果的Volume内，如果在Volume内则触发对应的后期效果。
 
                     RenderSingleCamera(renderContext, camera);
 
                     using (new ProfilingScope(null, Profiling.Pipeline.endCameraRendering))
                     {
-                        EndCameraRendering(renderContext, camera);
+                        EndCameraRendering(renderContext, camera); //表示该帧渲染结束，提交后备缓冲区。
                     }
                 }
             }
@@ -304,7 +307,7 @@ namespace UnityEngine.Rendering.Universal
         /// <param name="context">Render context used to record commands during execution.</param>
         /// <param name="camera">Camera to render.</param>
         /// <seealso cref="ScriptableRenderContext"/>
-        public static void RenderSingleCamera(ScriptableRenderContext context, Camera camera)
+        public static void RenderSingleCamera(ScriptableRenderContext context, Camera camera) //该方法用于渲染一个相机，其过程主要包括剪裁、设置渲染器、执行渲染器三步
         {
             UniversalAdditionalCameraData additionalCameraData = null;
             if (IsGameCamera(camera))
@@ -358,7 +361,7 @@ namespace UnityEngine.Rendering.Universal
                 return;
             }
 
-            if (!TryGetCullingParameters(cameraData, out var cullingParameters))
+            if (!TryGetCullingParameters(cameraData, out var cullingParameters)) //获得当前相机的剪裁参数，保存在变量cullingParameters里。
                 return;
 
             ScriptableRenderer.current = renderer;
@@ -370,25 +373,25 @@ namespace UnityEngine.Rendering.Universal
             // That will orphan ProfilingScope markers as the named CommandBuffer markers are their parents.
             // Resulting in following pattern:
             // exec(cmd.start, scope.start, cmd.end) and exec(cmd.start, scope.end, cmd.end)
-            CommandBuffer cmd = CommandBufferPool.Get();
+            CommandBuffer cmd = CommandBufferPool.Get(); //申请一个CommandBuffer来执行渲染命令。
 
             // TODO: move skybox code from C++ to URP in order to remove the call to context.Submit() inside DrawSkyboxPass
             // Until then, we can't use nested profiling scopes with XR multipass
-            CommandBuffer cmdScope = cameraData.xr.enabled ? null : cmd;
+            CommandBuffer cmdScope = cameraData.xr.enabled ? null : cmd; 
 
             ProfilingSampler sampler = Profiling.TryGetOrAddCameraSampler(camera);
             using (new ProfilingScope(cmdScope, sampler)) // Enqueues a "BeginSample" command into the CommandBuffer cmd
             {
-                renderer.Clear(cameraData.renderType);
+                renderer.Clear(cameraData.renderType); //清空渲染器，也就是重置里面的一些数据。
 
                 using (new ProfilingScope(null, Profiling.Pipeline.Renderer.setupCullingParameters))
                 {
                     renderer.OnPreCullRenderPasses(in cameraData);
-                    renderer.SetupCullingParameters(ref cullingParameters, ref cameraData);
+                    renderer.SetupCullingParameters(ref cullingParameters, ref cameraData);// 获取用于摄像机视锥剔除相关的数据
                 }
-
+                //执行当前的渲染命令。
                 context.ExecuteCommandBuffer(cmd); // Send all the commands enqueued so far in the CommandBuffer cmd, to the ScriptableRenderContext context
-                cmd.Clear();
+                cmd.Clear(); //清空CommandBuffer，以供接下来渲染使用。
 
 #if UNITY_EDITOR
                 // Emit scene view UI
@@ -398,9 +401,9 @@ namespace UnityEngine.Rendering.Universal
                 }
 #endif
 
-                var cullResults = context.Cull(ref cullingParameters);
+                var cullResults = context.Cull(ref cullingParameters); //根据剪裁参数cullingParameters执行相机剪裁，并将剪裁结果储存在cullResults里面。
                 InitializeRenderingData(asset, ref cameraData, ref cullResults, anyPostProcessingEnabled, out var renderingData);
-
+                //根据当前帧的剪裁结果、灯光状态等每帧可能会改变的数据，来初始化本帧渲染需要用到的渲染数据renderingData。
 #if ADAPTIVE_PERFORMANCE_2_0_0_OR_NEWER
                 if (asset.useAdaptivePerformance)
                     ApplyAdaptivePerformance(ref renderingData);
@@ -408,11 +411,11 @@ namespace UnityEngine.Rendering.Universal
 
                 using (new ProfilingScope(null, Profiling.Pipeline.Renderer.setup))
                 {
-                    renderer.Setup(context, ref renderingData);
+                    renderer.Setup(context, ref renderingData); //调用渲染器的Setup(...)，主要是根据当前渲染数据，去设置本帧渲染需要用到的渲染过程到队列中，这些渲染过程在这里被命名为Pass，其基类类型为ScriptableRenderPass，可以继承扩展。后面会针对前向渲染器（ForwardRenderer）作详细描述。
                 }
 
                 // Timing scope inside
-                renderer.Execute(context, ref renderingData);
+                renderer.Execute(context, ref renderingData); //执行已经在队列中的渲染过程
                 CleanupLightData(ref renderingData.lightData);
             } // When ProfilingSample goes out of scope, an "EndSample" command is enqueued into CommandBuffer cmd
 
@@ -428,6 +431,7 @@ namespace UnityEngine.Rendering.Universal
                     CoreUtils.SetKeyword(cmd, ShaderKeywordStrings.RenderPassEnabled, false);
                     Debug.LogWarning("Rendering command not supported inside a native RenderPass found. Falling back to non-RenderPass rendering path");
                 }
+                // 将所有缓冲的指令提交。指令被提交到引擎，引擎再将指令提交到图形驱动
                 context.Submit(); // Actually execute the commands that we previously sent to the ScriptableRenderContext context
             }
 
@@ -455,6 +459,7 @@ namespace UnityEngine.Rendering.Universal
             bool supportsCameraStacking = renderer != null && renderer.supportedRenderingFeatures.cameraStacking;
             List<Camera> cameraStack = (supportsCameraStacking) ? baseCameraAdditionalData?.cameraStack : null;
 
+            //初始化anyPostProcessingEnabled和lastActiveOverlayCameraIndex，用于当作参数传入接下来所有生效相机的“相机渲染常规步骤”里面
             bool anyPostProcessingEnabled = baseCameraAdditionalData != null && baseCameraAdditionalData.renderPostProcessing;
 
             // We need to know the last active camera in the stack to be able to resolve
@@ -466,7 +471,7 @@ namespace UnityEngine.Rendering.Universal
                 var baseCameraRendererType = baseCameraAdditionalData?.scriptableRenderer.GetType();
                 bool shouldUpdateCameraStack = false;
 
-                for (int i = 0; i < cameraStack.Count; ++i)
+                for (int i = 0; i < cameraStack.Count; ++i) //每一个相机
                 {
                     Camera currCamera = cameraStack[i];
                     if (currCamera == null)
@@ -475,7 +480,7 @@ namespace UnityEngine.Rendering.Universal
                         continue;
                     }
 
-                    if (currCamera.isActiveAndEnabled)
+                    if (currCamera.isActiveAndEnabled) //生效
                     {
                         currCamera.TryGetComponent<UniversalAdditionalCameraData>(out var data);
 
@@ -495,9 +500,9 @@ namespace UnityEngine.Rendering.Universal
                                 continue;
                             }
                         }
-
-                        anyPostProcessingEnabled |= data.renderPostProcessing;
-                        lastActiveOverlayCameraIndex = i;
+                        //anyPostProcessingEnabled == true说明需要处理后期效果
+                        anyPostProcessingEnabled |= data.renderPostProcessing; //是否Active，是否Enabled，是否是Overlay相机，是否scriptableRenderer类型和主相机保持一致
+                        lastActiveOverlayCameraIndex = i; //最后一个overlay的相机 
                     }
                 }
                 if (shouldUpdateCameraStack)
@@ -509,7 +514,7 @@ namespace UnityEngine.Rendering.Universal
             // Post-processing not supported in GLES2.
             anyPostProcessingEnabled &= SystemInfo.graphicsDeviceType != GraphicsDeviceType.OpenGLES2;
 
-            bool isStackedRendering = lastActiveOverlayCameraIndex != -1;
+            bool isStackedRendering = lastActiveOverlayCameraIndex != -1; 
 
 #if ENABLE_VR && ENABLE_XR_MODULE
             var xrActive = false;
@@ -570,7 +575,7 @@ namespace UnityEngine.Rendering.Universal
             m_XRSystem.EndLateLatching(baseCamera, xrPass);
 #endif
 
-            if (isStackedRendering)
+            if (isStackedRendering) //根据lastActiveOverlayCameraIndex的值就可以判断有没有后续生效相机需要渲染，需不需要继续遍历CameraStack的所有相机，将这个判断得出的bool值保存到变量isStackedRendering里。
             {
                 for (int i = 0; i < cameraStack.Count; ++i)
                 {
@@ -604,9 +609,9 @@ namespace UnityEngine.Rendering.Universal
                         if (baseCameraData.xr.enabled)
                             m_XRSystem.UpdateFromCamera(ref overlayCameraData.xr, overlayCameraData);
 #endif
-                        RenderSingleCamera(context, overlayCameraData, anyPostProcessingEnabled);
+                        RenderSingleCamera(context, overlayCameraData, anyPostProcessingEnabled); //anyPostProcessingEnabled == true说明需要处理后期效果
 
-                        using (new ProfilingScope(null, Profiling.Pipeline.endCameraRendering))
+                        using (new ProfilingScope(null, Profiling.Pipeline.endCameraRendering)) //
                         {
                             EndCameraRendering(context, currCamera);
                         }
@@ -720,6 +725,7 @@ namespace UnityEngine.Rendering.Universal
 #endif
         }
 
+        //首先根据官方文档，在URP里相机上会绑一个叫做UniversalAdditionalCameraData的脚本。该脚本包含的变量，描述了该相机是否有某些渲染特性，比如是否需要渲染DepthTexture，是否需要渲染OpaqueTexture等。InitializeCameraData(...)就是将这些变量值从当前相机的UniversalAdditionalCameraData脚本里提取出来，供相机内的渲染使用。
         static void InitializeCameraData(Camera camera, UniversalAdditionalCameraData additionalCameraData, bool resolveFinalTarget, out CameraData cameraData)
         {
             using var profScope = new ProfilingScope(null, Profiling.Pipeline.initializeCameraData);

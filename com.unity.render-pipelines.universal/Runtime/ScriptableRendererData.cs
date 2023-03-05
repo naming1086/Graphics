@@ -39,7 +39,7 @@ namespace UnityEngine.Rendering.Universal
         /// Creates the instance of the ScriptableRenderer.
         /// </summary>
         /// <returns>The instance of ScriptableRenderer</returns>
-        protected abstract ScriptableRenderer Create();
+        protected abstract ScriptableRenderer Create(); //创建scriptrenderer
 
         [SerializeField] internal List<ScriptableRendererFeature> m_RendererFeatures = new List<ScriptableRendererFeature>(10);
         [SerializeField] internal List<long> m_RendererFeatureMap = new List<long>(10);
@@ -117,7 +117,7 @@ namespace UnityEngine.Rendering.Universal
             return null;
         }
 
-        internal virtual Shader GetDefaultShader()
+        internal virtual Shader GetDefaultShader() //获取默认的shader
         {
             return null;
         }
